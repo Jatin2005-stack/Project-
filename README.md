@@ -25,3 +25,26 @@ model.fit(X_train, y_train)
 joblib.dump(model, "model/bovine_health_model.pkl")
 
 print("Model trained and saved successfully!")
+import joblib
+import numpy as np
+
+# Load trained model
+model = joblib.load("model/bovine_health_model.pkl")
+
+def predict_disease(temperature, humidity, activity, heart_rate):
+
+    data = np.array([[temperature, humidity, activity, heart_rate]])
+
+    prediction = model.predict(data)
+
+    if prediction[0] == 1:
+        return "Cow is Sick"
+    else:
+        return "Cow is Healthy"
+
+
+# Example test
+result = predict_disease(39.5, 70, 30, 90)
+
+print(result)
+
