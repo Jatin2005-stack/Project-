@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Bovine Health Monitoring</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<h1>Bovine Health Monitoring System 🐄</h1>
+
+<div class="container">
+
+<label>Temperature:</label>
+<input type="number" id="temp" placeholder="Enter temperature">
+
+<label>Humidity:</label>
+<input type="number" id="humidity" placeholder="Enter humidity">
+
+<label>Activity:</label>
+<input type="number" id="activity" placeholder="Enter activity">
+
+<label>Heart Rate:</label>
+<input type="number" id="heart" placeholder="Enter heart rate">
+
+<button onclick="checkHealth()">Predict</button>
+
+<h2 id="result"></h2>
+
+</div>
+
+<script>
+
+function checkHealth(){
+
+let temp = document.getElementById("temp").value
+let humidity = document.getElementById("humidity").value
+let activity = document.getElementById("activity").value
+let heart = document.getElementById("heart").value
+
+let formData = new FormData()
+
+formData.append("temperature", temp)
+formData.append("humidity", humidity)
+formData.append("activity", activity)
+formData.append("heart_rate", heart)
+
+fetch("/check",{
+method:"POST",
+body:formData
+})
+.then(response => response.json())
+.then(data => {
+document.getElementById("result").innerHTML = "Result: " + data.result
+})
+.catch(error => {
+document.getElementById("result").innerHTML = "Error: " + error
+})
+
+}
+
+</script>
+
+</body>
+</html>
