@@ -1,50 +1,37 @@
-# Project-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-import joblib
+pip install pandas numpy scikit-learn matplotlib
+# Import libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
-# Load dataset
-data = pd.read_csv("dataset/bovine_health_dataset.csv")
+# Create dataset
+data = {
+    'Hours': [1,2,3,4,5,6,7,8,9,10],
+    'Scores': [10,20,30,40,50,60,70,80,90,100]
+}
 
-# Features and target
-X = data.drop("health_status", axis=1)
-y = data["health_status"]
+df = pd.DataFrame(data)
 
-# Train test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+# Split data into X (input) and y (output)
+X = df[['Hours']]
+y = df['Scores']
 
-# Model
-model = RandomForestClassifier()
+# Create model
+model = LinearRegression()
 
 # Train model
-model.fit(X_train, y_train)
+model.fit(X, y)
 
-# Save model
-joblib.dump(model, "model/bovine_health_model.pkl")
+# Prediction
+predicted = model.predict([[7]])
+print("Predicted Score for 7 hours:", predicted[0])
 
-print("Model trained and saved successfully!")
-import joblib
-import numpy as np
-
-# Load trained model
-model = joblib.load("model/bovine_health_model.pkl")
-
-def predict_disease(temperature, humidity, activity, heart_rate):
-
-    data = np.array([[temperature, humidity, activity, heart_rate]])
-
-    prediction = model.predict(data)
-
-    if prediction[0] == 1:
-        return "Cow is Sick"
-    else:
-        return "Cow is Healthy"
-
-
-# Example test
-result = predict_disease(39.5, 70, 30, 90)
-
-print(result)
+# Plot graph
+plt.scatter(X, y, color='blue')
+plt.plot(X, model.predict(X), color='red')
+plt.xlabel("Study Hours")
+plt.ylabel("Scores")
+plt.title("Study Hours vs Score")
+plt.show()
 
