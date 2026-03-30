@@ -1,37 +1,62 @@
-pip install pandas numpy scikit-learn matplotlib
-# Import libraries
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+import joblib
 
-# Create dataset
-data = {
-    'Hours': [1,2,3,4,5,6,7,8,9,10],
-    'Scores': [10,20,30,40,50,60,70,80,90,100]
-}
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.cluster import KMeans
+from sklearn.metrics import accuracy_score
 
-df = pd.DataFrame(data)
+# Load dataset
+data = pd.read_csv("data/bovine_health_dataset_2000_rows.csv")
 
-# Split data into X (input) and y (output)
-X = df[['Hours']]
-y = df['Scores']
+data['disease'] = data['disease'].map({'healthy': 0, 'sick': 1})
 
-# Create model
-model = LinearRegression()
+X = data[['temperature', 'humidity', 'activity', 'heart_rate']]
+y = data['disease']
 
-# Train model
-model.fit(X, y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Prediction
-predicted = model.predict([[7]])
-print("Predicted Score for 7 hours:", predicted[0])
+# Random Forest
+rf = RandomForestClassifier(n_estimators=100)
+rf.fit(X_train, y_train)
+rf_acc = accuracy_score(y_test, rf.predict(X_test))
 
-# Plot graph
-plt.scatter(X, y, color='blue')
-plt.plot(X, model.predict(X), color='red')
-plt.xlabel("Study Hours")
-plt.ylabel("Scores")
-plt.title("Study Hours vs Score")
-plt.show()
+# Logistic Regression
+lr = LogisticRegression(max_iter=1000)
+lr.fit(X_train, y_train)
+lr_acc = accuracy_score(y_test, lr.predict(X_test))
+
+# Save best model
+if rf_acc > lr_acc:
+    best_model = rf
+    best_acc = rf_acc
+    model_name = "Random Forest"
+else:
+    best_model = lr
+    best_acc = lr_acc
+    model_name = "Logistic Regression"
+
+joblib.dump(best_model, "model.pkl")
+
+# Save accuracy
+with open("accuracy.txt", "w") as f:
+    f.write(f"{model_name} Accuracy: {best_acc}")
+
+# KMeans
+kmeans = KMeans(n_clusters=2)
+data['cluster'] = kmeans.fit_predict(X)
+
+# Save graph image
+plt.figure()
+plt.scatter(data['temperature'], data['heart_rate'], c=data['cluster'])
+plt.xlabel("Temperature")
+plt.ylabel("Heart Rate")
+plt.title("Cow Behavior Clustering")
+
+plt.savefig("static/graph.png")  # IMPORTANT
+plt.close()
+
+print("✅ Model + Graph + Accuracy saved")
 
