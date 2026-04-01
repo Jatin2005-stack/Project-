@@ -1,33 +1,63 @@
-from flask import Flask, render_template, request
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.cluster import KMeans
 import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-app = Flask(__name__)
+# Load data
+df = pd.read_csv("data/bovine_health_dataset_2000_rows.csv")
 
-model = joblib.load("model.pkl")
+# Features
+X = df[['temperature', 'humidity', 'activity', 'heart_rate']]
+y = df['disease'].map({'healthy': 0, 'sick': 1})
 
-# Load accuracy
-with open("accuracy.txt", "r") as f:
-    accuracy = f.read()
+# ✅ STRATIFY FIX
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y
+)
 
-@app.route('/')
-def home():
-    return render_template("index.html", accuracy=accuracy)
+# ✅ IMPROVED MODEL
+rf = RandomForestClassifier(
+    n_estimators=200,
+    max_depth=10,
+    class_weight='balanced',
+    random_state=42
+)
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    temp = float(request.form['temperature'])
-    hum = float(request.form['humidity'])
-    act = float(request.form['activity'])
-    hr = float(request.form['heart_rate'])
+rf.fit(X_train, y_train)
 
-    prediction = model.predict([[temp, hum, act, hr]])
+# Prediction
+y_pred = rf.predict(X_test)
 
-    if prediction[0] == 1:
-        result = "⚠️ ALERT: Cow is SICK"
-    else:
-        result = "✅ Cow is HEALTHY"
+# Accuracy
+acc = accuracy_score(y_test, y_pred)
 
-    return render_template("index.html", prediction_text=result, accuracy=accuracy)
+# Save model
+joblib.dump(rf, "model.pkl")
 
-if __name__ == "__main__":
-    app.run(debug=True)True)
+# KMeans
+kmeans = KMeans(n_clusters=2, random_state=42)
+kmeans.fit(X)
+joblib.dump(kmeans, "kmeans.pkl")
+
+# Save accuracy
+with open("accuracy.txt", "w") as f:
+    f.write(f"RF Accuracy: {acc}")
+
+# Accuracy graph
+plt.figure()
+plt.bar(['RF'], [acc])
+plt.savefig("static/accuracy_graph.png")
+plt.close()
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+plt.figure()
+sns.heatmap(cm, annot=True, fmt='d')
+plt.savefig("static/confusion_matrix.png")
+plt.close()
+
+print("Training Fixed ✅")
