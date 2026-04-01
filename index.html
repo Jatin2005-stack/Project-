@@ -1,65 +1,208 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-<title>Bovine Health Monitoring</title>
-<link rel="stylesheet" href="/static/style.css">
+<title>AI Bovine Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: #0f2027;
+    color: white;
+    overflow-x: hidden;
+}
+
+/* PARTICLES BG */
+#bg {
+    position: fixed;
+    z-index: -2;
+}
+
+/* TITLE */
+h1 {
+    text-align: center;
+    padding: 20px;
+}
+
+/* DASHBOARD */
+.dashboard {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+/* CARD */
+.card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 18px;
+    padding: 20px;
+    width: 340px;
+    position: relative;
+    z-index: 1;
+    transition: 0.3s;
+}
+
+/* 🔥 FIXED CLEAN GLOW */
+.card::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(120deg, #00c6ff, #0072ff);
+    filter: blur(20px);
+    opacity: 0;
+    transition: 0.4s;
+    z-index: -1;
+}
+
+.card:hover::before {
+    opacity: 0.25;
+}
+
+/* HOVER */
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 25px rgba(0, 198, 255, 0.3);
+}
+
+/* INPUT */
+input {
+    width: 95%;
+    padding: 10px;
+    margin: 6px;
+    border-radius: 8px;
+    border: none;
+}
+
+/* BUTTON */
+button {
+    width: 100%;
+    padding: 12px;
+    background: #00c6ff;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* IMG */
+img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+/* CHAT */
+#reply {
+    color: #00ffcc;
+}
+</style>
+
 </head>
 
 <body>
 
-<h1>Bovine Health Monitoring System 🐄</h1>
+<canvas id="bg"></canvas>
 
-<div class="container">
+<h1>🐄 AI Bovine Health Dashboard</h1>
 
-<label>Temperature:</label>
-<input type="number" id="temp" placeholder="Enter temperature">
+<div class="dashboard">
 
-<label>Humidity:</label>
-<input type="number" id="humidity" placeholder="Enter humidity">
+<!-- INPUT -->
+<div class="card" data-aos="fade-up">
+<h2>Enter Parameters</h2>
 
-<label>Activity:</label>
-<input type="number" id="activity" placeholder="Enter activity">
+<form action="/predict" method="post">
+<input name="temperature" placeholder="Temperature" required>
+<input name="humidity" placeholder="Humidity" required>
+<input name="activity" placeholder="Activity" required>
+<input name="heart_rate" placeholder="Heart Rate" required>
 
-<label>Heart Rate:</label>
-<input type="number" id="heart" placeholder="Enter heart rate">
+<button type="submit">Predict</button>
+</form>
 
-<button onclick="checkHealth()">Predict</button>
+<h3>{{ prediction_text }}</h3>
+<p>{{ cluster }}</p>
 
-<h2 id="result"></h2>
+<img src="/static/live_graph.png">
+</div>
+
+<!-- ANALYTICS -->
+<div class="card" data-aos="zoom-in">
+<h2>Analytics</h2>
+
+<p>Accuracy: {{ accuracy }}</p>
+
+<img src="/static/accuracy_graph.png">
+<img src="/static/confusion_matrix.png">
+</div>
+
+<!-- CHAT -->
+<div class="card" data-aos="fade-left">
+<h2>AI Assistant</h2>
+
+<input id="msg" placeholder="Ask about cow health">
+<button onclick="sendMsg()">Send</button>
+
+<p id="reply"></p>
+</div>
 
 </div>
 
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
 <script>
+AOS.init();
 
-function checkHealth(){
+/* CHAT */
+function sendMsg(){
+let msg=document.getElementById("msg").value;
 
-let temp = document.getElementById("temp").value
-let humidity = document.getElementById("humidity").value
-let activity = document.getElementById("activity").value
-let heart = document.getElementById("heart").value
-
-let formData = new FormData()
-
-formData.append("temperature", temp)
-formData.append("humidity", humidity)
-formData.append("activity", activity)
-formData.append("heart_rate", heart)
-
-fetch("/check",{
+fetch("/chat",{
 method:"POST",
-body:formData
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:msg})
 })
-.then(response => response.json())
-.then(data => {
-document.getElementById("result").innerHTML = "Result: " + data.result
-})
-.catch(error => {
-document.getElementById("result").innerHTML = "Error: " + error
-})
-
+.then(res=>res.json())
+.then(data=>{
+document.getElementById("reply").innerText=data.reply;
+});
 }
 
+/* PARTICLES */
+const canvas = document.getElementById("bg");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+
+for(let i=0;i<50;i++){
+    particles.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*2
+    });
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    particles.forEach(p=>{
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,2*Math.PI);
+        ctx.fillStyle="white";
+        ctx.fill();
+        p.y += 0.3;
+        if(p.y>canvas.height) p.y=0;
+    });
+
+    requestAnimationFrame(draw);
+}
+draw();
 </script>
 
 </body>
