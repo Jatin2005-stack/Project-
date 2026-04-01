@@ -1,63 +1,111 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.cluster import KMeans
+from flask import Flask, render_template, request, jsonify
 import joblib
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns
+import pandas as pd
+from twilio.rest import Client
 
-# Load data
-df = pd.read_csv("data/bovine_health_dataset_2000_rows.csv")
+app = Flask(__name__)
 
-# Features
-X = df[['temperature', 'humidity', 'activity', 'heart_rate']]
-y = df['disease'].map({'healthy': 0, 'sick': 1})
+# TWILIO
+ACCOUNT_SID = "AC816cdeac76ad2044b72c7763dccbe100"
+AUTH_TOKEN = "8bdacdfa9b7e3c29496c25f0e7503708"
+TWILIO_NUMBER = "+12605253378"
+MY_NUMBER = "+919350847738"
 
-# ✅ STRATIFY FIX
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, stratify=y
-)
+client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
-# ✅ IMPROVED MODEL
-rf = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=10,
-    class_weight='balanced',
-    random_state=42
-)
-
-rf.fit(X_train, y_train)
-
-# Prediction
-y_pred = rf.predict(X_test)
+# Load model
+model = joblib.load("model.pkl")
+kmeans = joblib.load("kmeans.pkl")
 
 # Accuracy
-acc = accuracy_score(y_test, y_pred)
+try:
+    with open("accuracy.txt") as f:
+        accuracy = f.read()
+except:
+    accuracy = "No data"
 
-# Save model
-joblib.dump(rf, "model.pkl")
+last_data = {}
 
-# KMeans
-kmeans = KMeans(n_clusters=2, random_state=42)
-kmeans.fit(X)
-joblib.dump(kmeans, "kmeans.pkl")
+@app.route('/')
+def home():
+    return render_template("index.html",
+                           accuracy=accuracy,
+                           acc_graph="accuracy_graph.png",
+                           cm="confusion_matrix.png")
 
-# Save accuracy
-with open("accuracy.txt", "w") as f:
-    f.write(f"RF Accuracy: {acc}")
+@app.route('/predict', methods=['POST'])
+def predict():
+    global last_data
 
-# Accuracy graph
-plt.figure()
-plt.bar(['RF'], [acc])
-plt.savefig("static/accuracy_graph.png")
-plt.close()
+    temp = float(request.form['temperature'])
+    hum = float(request.form['humidity'])
+    act = float(request.form['activity'])
+    hr = float(request.form['heart_rate'])
 
-# Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
-plt.figure()
-sns.heatmap(cm, annot=True, fmt='d')
-plt.savefig("static/confusion_matrix.png")
-plt.close()
+    last_data = {"temp": temp, "hum": hum, "act": act, "hr": hr}
 
-print("Training Fixed ✅")
+    df = pd.DataFrame([[temp, hum, act, hr]],
+                      columns=['temperature','humidity','activity','heart_rate'])
+
+    # 🔥 PURE ML
+    pred = model.predict(df)[0]
+    cluster = kmeans.predict(df)[0]
+
+    if pred == 1:
+        result = "⚠️ Cow is SICK"
+        color = "red"
+    else:
+        result = "✅ Cow is HEALTHY"
+        color = "green"
+
+    # SMS
+    try:
+        if pred == 1:
+            client.messages.create(
+                body=f"Cow Sick!\nTemp={temp}, HR={hr}",
+                from_=TWILIO_NUMBER,
+                to=MY_NUMBER
+            )
+        alert = "Alert processed"
+    except:
+        alert = "SMS error"
+
+    # Graph
+    plt.figure()
+    plt.bar(['Temp','Humidity','Activity','HR'], [temp, hum, act, hr], color=color)
+    plt.savefig("static/live_graph.png")
+    plt.close()
+
+    return render_template("index.html",
+                           prediction_text=result,
+                           alert=alert,
+                           accuracy=accuracy,
+                           graph="live_graph.png",
+                           acc_graph="accuracy_graph.png",
+                           cm="confusion_matrix.png",
+                           cluster=f"Cluster: {cluster}")
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    global last_data
+
+    msg = request.json.get("message", "").lower()
+
+    if not last_data:
+        return jsonify({"reply": "First predict data."})
+
+    temp = last_data["temp"]
+    hr = last_data["hr"]
+
+    if "sick" in msg:
+        reply = f"Temp={temp}, HR={hr}. Possible illness detected."
+    else:
+        reply = "Ask about cow health."
+
+    return jsonify({"reply": reply})
+
+if __name__ == "__main__":
+    app.run(debug=True)
