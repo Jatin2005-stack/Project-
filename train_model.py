@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load data
-df = pd.read_csv("data/bovine_health_dataset_2000_rows.csv")
+df = pd.read_csv("bovine_health_dataset_2000_rows.csv")
 
 # Features
 X = df[['temperature', 'humidity', 'activity', 'heart_rate']]
