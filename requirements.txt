@@ -4,5 +4,5 @@ scikit-learn
 matplotlib
 joblib
 twilio
-seanorn
+seaborn
 gunicorn
