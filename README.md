@@ -1,62 +1,45 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import joblib
+# Precision Livestock Farming System for Bovine Health Monitoring using Machine Learning and IoT
 
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.cluster import KMeans
-from sklearn.metrics import accuracy_score
+This project is an AI-based bovine health monitoring system developed using Machine Learning and Flask.  
+It predicts whether a cow is healthy or sick using input parameters such as:
 
-# Load dataset
-data = pd.read_csv("data/bovine_health_dataset_2000_rows.csv")
+- Temperature
+- Humidity
+- Activity
+- Heart Rate
 
-data['disease'] = data['disease'].map({'healthy': 0, 'sick': 1})
+## Features
+- Machine Learning based prediction
+- Random Forest model
+- K-Means clustering
+- Graph visualization
+- SMS alert system
+- Chatbot support
+- Professional web dashboard
 
-X = data[['temperature', 'humidity', 'activity', 'heart_rate']]
-y = data['disease']
+## Technologies Used
+- Python
+- Flask
+- Pandas
+- Scikit-learn
+- Matplotlib
+- Twilio API
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+## Machine Learning Models
+- Random Forest
+- Logistic Regression
+- Decision Tree
+- K-Means Clustering
 
-# Random Forest
-rf = RandomForestClassifier(n_estimators=100)
-rf.fit(X_train, y_train)
-rf_acc = accuracy_score(y_test, rf.predict(X_test))
+## Project Structure
+- `app.py` → Main Flask application
+- `train_model.py` → Model training file
+- `bovine_health_dataset_2000_rows.csv` → Dataset
+- `requirements.txt` → Required libraries
 
-# Logistic Regression
-lr = LogisticRegression(max_iter=1000)
-lr.fit(X_train, y_train)
-lr_acc = accuracy_score(y_test, lr.predict(X_test))
+## GitHub Repository
+Project source code is available here for academic reference and verification.
 
-# Save best model
-if rf_acc > lr_acc:
-    best_model = rf
-    best_acc = rf_acc
-    model_name = "Random Forest"
-else:
-    best_model = lr
-    best_acc = lr_acc
-    model_name = "Logistic Regression"
-
-joblib.dump(best_model, "model.pkl")
-
-# Save accuracy
-with open("accuracy.txt", "w") as f:
-    f.write(f"{model_name} Accuracy: {best_acc}")
-
-# KMeans
-kmeans = KMeans(n_clusters=2)
-data['cluster'] = kmeans.fit_predict(X)
-
-# Save graph image
-plt.figure()
-plt.scatter(data['temperature'], data['heart_rate'], c=data['cluster'])
-plt.xlabel("Temperature")
-plt.ylabel("Heart Rate")
-plt.title("Cow Behavior Clustering")
-
-plt.savefig("static/graph.png")  # IMPORTANT
-plt.close()
-
-print("✅ Model + Graph + Accuracy saved")
+## Future Scope
+The system can be further extended with real-time IoT sensor integration for live livestock monitoring.
 
